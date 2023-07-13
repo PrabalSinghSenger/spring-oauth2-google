@@ -15,9 +15,13 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.security.web.authentication.rememberme.JdbcTokenRepositoryImpl;
+import org.springframework.security.web.authentication.rememberme.PersistentTokenRepository;
 
 @Configuration
 @EnableWebSecurity
@@ -49,8 +53,8 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
 	@Override
 	protected void configure(HttpSecurity http) throws Exception {
-		http.authorizeRequests()
-			.antMatchers("/", "/login", "/oauth/**").permitAll()
+		http.cors().disable().authorizeRequests()
+			.antMatchers("/home", "/login**","/callback/", "/webjars/**", "/error**", "/oauth2**").permitAll()
 			.anyRequest().authenticated()
 			.and()
 			.formLogin().permitAll()
@@ -77,13 +81,24 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 						
 						response.sendRedirect("/list");
 					}
-				})
-				//.defaultSuccessUrl("/list")
+				}).failureHandler(new AuthenticationFailureHandler() {
+					
+					@Override
+					public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
+							AuthenticationException exception) throws IOException, ServletException {
+						// TODO Auto-generated method stub
+						System.out.println("Failed the oauth : "+exception.getMessage());
+						exception.printStackTrace();
+					}
+				}).failureUrl("/403")
+				
 			.and()
-			.logout().logoutSuccessUrl("/").permitAll()
+	.logout().logoutSuccessUrl("/login").permitAll()
 			.and()
 			.exceptionHandling().accessDeniedPage("/403")
+
 			;
+//		http.rememberMe().tokenRepository(new PersistentTokenRepository());
 	}
 	
 	@Autowired
